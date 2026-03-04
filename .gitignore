@@ -1,0 +1,18 @@
+# Node
+frontend/node_modules
+frontend/build
+frontend/dist
+
+# Java
+backend/target
+backend/*.log
+
+# Environment files
+.env
+frontend/.env
+
+# MacOS
+.DS_Store
+
+# Logs
+*.log
