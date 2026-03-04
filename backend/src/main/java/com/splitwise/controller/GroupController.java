@@ -3,6 +3,8 @@ package com.splitwise.controller;
 import com.splitwise.dto.*;
 import com.splitwise.entity.*;
 import com.splitwise.repository.*;
+import com.splitwise.service.BalanceService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +21,7 @@ public class GroupController {
     private final UserRepository userRepository;
     private final ExpenseRepository expenseRepository;
     private final ExpenseSplitRepository expenseSplitRepository;
+    private final BalanceService balanceService;
 
     /* =====================================================
        CREATE GROUP
@@ -335,96 +338,78 @@ public String addMember(@PathVariable Long groupId,
 
         return "Expense updated";
     }
+    @GetMapping("/{groupId}/analytics")
+public GroupAnalyticsResponse getGroupAnalytics(@PathVariable Long groupId) {
+
+    User currentUser = getCurrentUser();
+
+    if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUser.getId())) {
+        throw new RuntimeException("Not part of group");
+    }
+
+    List<Expense> expenses = expenseRepository.findByGroupId(groupId);
+
+    double totalGroupExpense = expenses.stream()
+            .mapToDouble(Expense::getAmount)
+            .sum();
+
+    double yourExpense = expenses.stream()
+            .filter(e -> e.getPaidBy().equals(currentUser.getId()))
+            .mapToDouble(Expense::getAmount)
+            .sum();
+
+    Map<Long, Double> spending = new HashMap<>();
+
+    for (Expense e : expenses) {
+        spending.put(
+            e.getPaidBy(),
+            spending.getOrDefault(e.getPaidBy(), 0.0) + e.getAmount()
+        );
+    }
+
+    Long topUser = null;
+    double max = 0;
+
+    for (Map.Entry<Long, Double> entry : spending.entrySet()) {
+        if (entry.getValue() > max) {
+            max = entry.getValue();
+            topUser = entry.getKey();
+        }
+    }
+
+    String highestSpender = userRepository
+            .findById(topUser)
+            .map(User::getName)
+            .orElse("Unknown");
+
+    double largestExpense = expenses.stream()
+            .mapToDouble(Expense::getAmount)
+            .max()
+            .orElse(0);
+
+    return GroupAnalyticsResponse.builder()
+            .totalGroupExpense(totalGroupExpense)
+            .yourExpense(yourExpense)
+            .highestSpender(highestSpender)
+            .highestExpenseAmount(largestExpense)
+            .build();
+}
 
     /* =====================================================
        GET BALANCES
     ===================================================== */
 
     @GetMapping("/{groupId}/balances")
-    public List<BalanceResponse> getBalances(@PathVariable Long groupId) {
+public List<BalanceResponse> getBalances(@PathVariable Long groupId) {
 
-        User currentUser = getCurrentUser();
+    User currentUser = getCurrentUser();
 
-        if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUser.getId())) {
-            throw new RuntimeException("Not part of group");
-        }
-
-        List<Expense> expenses = expenseRepository.findByGroupId(groupId);
-
-        Map<String, Double> debts = new HashMap<>();
-
-        for (Expense expense : expenses) {
-
-            Long payer = expense.getPaidBy();
-
-            List<ExpenseSplit> splits =
-                    expenseSplitRepository.findByExpenseIdIn(List.of(expense.getId()));
-
-            for (ExpenseSplit split : splits) {
-
-                Long user = split.getUserId();
-
-                if (user.equals(payer)) continue;
-
-                String key = user + "-" + payer;
-
-                debts.put(key, debts.getOrDefault(key, 0.0) + split.getAmount());
-            }
-        }
-
-        Map<String, Double> net = new HashMap<>();
-
-        for (Map.Entry<String, Double> entry : debts.entrySet()) {
-
-            String[] parts = entry.getKey().split("-");
-            Long from = Long.parseLong(parts[0]);
-            Long to = Long.parseLong(parts[1]);
-
-            String reverseKey = to + "-" + from;
-
-            double amount = entry.getValue();
-
-            if (net.containsKey(reverseKey)) {
-
-                double reverseAmount = net.get(reverseKey);
-
-                if (reverseAmount > amount) {
-                    net.put(reverseKey, reverseAmount - amount);
-                } else if (reverseAmount < amount) {
-                    net.remove(reverseKey);
-                    net.put(entry.getKey(), amount - reverseAmount);
-                } else {
-                    net.remove(reverseKey);
-                }
-
-            } else {
-                net.put(entry.getKey(), amount);
-            }
-        }
-
-        List<BalanceResponse> result = new ArrayList<>();
-
-        for (Map.Entry<String, Double> entry : net.entrySet()) {
-
-            if (entry.getValue() <= 0.01) continue;
-
-            String[] parts = entry.getKey().split("-");
-
-            Long fromUser = Long.parseLong(parts[0]);
-            Long toUser = Long.parseLong(parts[1]);
-
-            result.add(
-                    BalanceResponse.builder()
-                            .fromUserId(fromUser)
-                            .toUserId(toUser)
-                            .amount(entry.getValue())
-                            .build()
-            );
-        }
-
-        return result;
+    if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUser.getId())) {
+        throw new RuntimeException("Not part of group");
     }
 
+    return balanceService.computeBalances(groupId);
+}
     /* =====================================================
        HELPERS
     ===================================================== */
