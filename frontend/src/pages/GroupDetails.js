@@ -3,12 +3,15 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import AddMemberModal from "../components/AddMemberModal";
+import EditExpenseModal from "../components/EditExpenseModal";
 import AddExpenseModal from "../components/AddExpenseModal";
 
 function GroupDetails() {
+
   const { groupId } = useParams();
   const token = localStorage.getItem("token");
 
+  const [group, setGroup] = useState(null);
   const [members, setMembers] = useState([]);
   const [balances, setBalances] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -16,11 +19,22 @@ function GroupDetails() {
 
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+
+  /* ===============================
+     FETCH DATA
+  =============================== */
 
   const fetchAll = async () => {
     try {
+
       const userRes = await axios.get(
         "http://localhost:8080/api/users/me",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const groupsRes = await axios.get(
+        "http://localhost:8080/api/groups",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -39,10 +53,16 @@ function GroupDetails() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      const currentGroup = groupsRes.data.find(
+        (g) => g.id === Number(groupId)
+      );
+
+      setGroup(currentGroup);
       setCurrentUser(userRes.data);
       setMembers(membersRes.data);
       setBalances(balanceRes.data);
       setExpenses(expenseRes.data);
+
     } catch (err) {
       console.error("Failed to load group data");
     }
@@ -51,6 +71,10 @@ function GroupDetails() {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  /* ===============================
+     HELPERS
+  =============================== */
 
   const getUserName = (id) => {
     const user = members.find((m) => m.id === id);
@@ -62,6 +86,7 @@ function GroupDetails() {
   =============================== */
 
   const settle = async (balance) => {
+
     await axios.post(
       `http://localhost:8080/api/groups/${groupId}/settle?fromUserId=${balance.fromUserId}&toUserId=${balance.toUserId}&amount=${balance.amount}`,
       {},
@@ -76,48 +101,38 @@ function GroupDetails() {
   =============================== */
 
   const deleteExpense = async (expenseId) => {
-    await axios.delete(
-      `http://localhost:8080/api/groups/${groupId}/expenses/${expenseId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
 
-    fetchAll();
-  };
+    if (!window.confirm("Delete this expense?")) return;
 
-  /* ===============================
-     EDIT EXPENSE (simple prompt)
-  =============================== */
+    try {
 
-  const editExpense = async (expense) => {
-    const newDescription = prompt(
-      "Edit description",
-      expense.description
-    );
-    const newAmount = prompt("Edit amount", expense.amount);
+      await axios.delete(
+        `http://localhost:8080/api/groups/${groupId}/expenses/${expenseId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    if (!newDescription || !newAmount) return;
+      fetchAll();
 
-    await axios.put(
-      `http://localhost:8080/api/groups/${groupId}/expenses/${expense.id}`,
-      {
-        description: newDescription,
-        amount: Number(newAmount),
-        splits: [],
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    fetchAll();
+    } catch {
+      alert("You are not allowed to delete this expense.");
+    }
   };
 
   return (
     <Layout>
+
       <div>
+
         {/* HEADER */}
+
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Group Overview</h2>
+
+          <h2 className="text-2xl font-bold">
+            {group ? group.name : "Group"}
+          </h2>
 
           <div className="flex gap-3">
+
             <button
               onClick={() => setShowMemberModal(true)}
               className="bg-gray-200 px-4 py-2 rounded"
@@ -131,30 +146,43 @@ function GroupDetails() {
             >
               Add Expense
             </button>
+
           </div>
         </div>
 
         {/* MEMBERS */}
+
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-3">Members</h3>
+
+          <h3 className="text-lg font-semibold mb-3">
+            Members
+          </h3>
+
           <div className="flex flex-wrap gap-3">
+
             {members.map((member) => (
+
               <div
                 key={member.id}
                 className="bg-gray-100 px-4 py-2 rounded-full text-sm"
               >
                 {member.name}
               </div>
+
             ))}
+
           </div>
+
         </div>
 
         {/* PER USER SUMMARY */}
+
         <h3 className="text-xl font-semibold mb-4">
           Per-User Summary
         </h3>
 
         {members.map((member) => {
+
           let total = 0;
 
           balances.forEach((b) => {
@@ -163,12 +191,16 @@ function GroupDetails() {
           });
 
           return (
+
             <div
               key={member.id}
               className="bg-white p-4 rounded shadow mb-2"
             >
+
               <p>
+
                 {member.name}:{" "}
+
                 <span
                   className={
                     total > 0
@@ -180,37 +212,48 @@ function GroupDetails() {
                 >
                   ₹{total.toFixed(2)}
                 </span>
+
               </p>
+
             </div>
+
           );
         })}
 
         {/* BALANCES */}
+
         <h3 className="text-xl font-semibold mt-8 mb-4">
           Balances
         </h3>
 
         {balances.length === 0 && (
+
           <div className="bg-white p-6 rounded shadow mb-6">
             <p className="text-green-600 font-medium">
               All settled 🎉
             </p>
           </div>
+
         )}
 
         {currentUser &&
           balances.map((balance, index) => {
+
             const isDebtor =
               balance.fromUserId === currentUser.id;
+
             const isCreditor =
               balance.toUserId === currentUser.id;
 
             return (
+
               <div
                 key={index}
                 className="bg-white p-6 rounded shadow mb-4 flex justify-between items-center"
               >
+
                 <div>
+
                   {isDebtor && (
                     <p className="text-red-600 font-medium">
                       You owe {getUserName(balance.toUserId)} ₹
@@ -224,21 +267,27 @@ function GroupDetails() {
                       {balance.amount.toFixed(2)}
                     </p>
                   )}
+
                 </div>
 
                 {isDebtor && (
+
                   <button
                     onClick={() => settle(balance)}
                     className="bg-green-600 text-white px-4 py-2 rounded text-sm"
                   >
                     Settle
                   </button>
+
                 )}
+
               </div>
+
             );
           })}
 
         {/* ACTIVITY TIMELINE */}
+
         <h3 className="text-xl font-semibold mt-10 mb-4">
           Activity Timeline
         </h3>
@@ -249,6 +298,7 @@ function GroupDetails() {
               new Date(b.createdAt) - new Date(a.createdAt)
           )
           .map((expense) => (
+
             <div
               key={expense.id}
               className={`p-5 rounded shadow mb-3 ${
@@ -257,8 +307,11 @@ function GroupDetails() {
                   : "bg-white"
               }`}
             >
+
               <div className="flex justify-between items-center">
+
                 <div>
+
                   <p className="font-medium">
                     {expense.description}
                   </p>
@@ -273,15 +326,23 @@ function GroupDetails() {
                       expense.createdAt
                     ).toLocaleString()}
                   </p>
+
                 </div>
 
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => editExpense(expense)}
-                    className="text-blue-600 text-sm"
-                  >
-                    Edit
-                  </button>
+
+                  {!expense.settlement && (
+
+                    <button
+                      onClick={() =>
+                        setEditingExpense(expense)
+                      }
+                      className="text-blue-600 text-sm"
+                    >
+                      Edit
+                    </button>
+
+                  )}
 
                   <button
                     onClick={() =>
@@ -291,12 +352,17 @@ function GroupDetails() {
                   >
                     Delete
                   </button>
+
                 </div>
+
               </div>
+
             </div>
+
           ))}
 
         {/* MODALS */}
+
         {showMemberModal && (
           <AddMemberModal
             groupId={groupId}
@@ -320,7 +386,22 @@ function GroupDetails() {
             }}
           />
         )}
+
+        {editingExpense && (
+          <EditExpenseModal
+            expense={editingExpense}
+            groupId={groupId}
+            token={token}
+            members={members}
+            onClose={() => {
+              setEditingExpense(null);
+              fetchAll();
+            }}
+          />
+        )}
+
       </div>
+
     </Layout>
   );
 }
