@@ -28,7 +28,7 @@ function Dashboard() {
       console.error("Failed to fetch dashboard data");
     }
   };
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData();
   }, []);

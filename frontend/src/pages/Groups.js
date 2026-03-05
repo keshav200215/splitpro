@@ -37,7 +37,7 @@ function Groups() {
       alert("Failed to create group");
     }
   };
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchGroups();
   }, []);

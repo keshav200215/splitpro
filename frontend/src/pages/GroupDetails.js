@@ -68,7 +68,7 @@ function GroupDetails() {
       console.error("Failed to load group data");
     }
   };
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchAll();
   }, []);
