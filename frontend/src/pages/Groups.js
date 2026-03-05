@@ -13,7 +13,7 @@ function Groups() {
   const fetchGroups = async () => {
     try {
       const response = await axios.get(
-        "${API}/api/groups",
+        `${API}/api/groups`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setGroups(response.data);
@@ -27,7 +27,7 @@ function Groups() {
 
     try {
       await axios.post(
-        "${API}/api/groups",
+        `${API}/api/groups`,
         { name: newGroupName },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -29,7 +29,7 @@ function Login() {
 
     try {
       const response = await axios.post(
-        "${API}/auth/login",
+        `${API}/auth/login`,
         { email, password }
       );
 

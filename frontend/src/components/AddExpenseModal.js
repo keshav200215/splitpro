@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API from "../config";
 
 export default function AddExpenseModal({
   groupId,
@@ -44,7 +45,7 @@ export default function AddExpenseModal({
     }
 
     await axios.post(
-      `http://localhost:8080/api/groups/${groupId}/expenses`,
+      `${API}/api/groups/${groupId}/expenses`,
       {
         description,
         amount: Number(amount),

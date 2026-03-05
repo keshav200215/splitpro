@@ -30,12 +30,12 @@ function GroupDetails() {
     try {
 
       const userRes = await axios.get(
-        "${API}/api/users/me",
+        `${API}/api/users/me`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const groupsRes = await axios.get(
-        "${API}/api/groups",
+        `${API}/api/groups`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

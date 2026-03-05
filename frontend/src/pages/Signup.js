@@ -34,7 +34,7 @@ function Signup() {
 
     try {
 
-      await axios.post("${API}/auth/signup", {
+      await axios.post(`${API}/auth/signup`, {
         name,
         email,
         password,
