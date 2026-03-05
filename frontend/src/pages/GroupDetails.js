@@ -12,6 +12,10 @@ function GroupDetails() {
   const { groupId } = useParams();
   const token = localStorage.getItem("token");
 
+  const headers = {
+    Authorization: `Bearer ${token}`
+  };
+
   const [group, setGroup] = useState(null);
   const [members, setMembers] = useState([]);
   const [balances, setBalances] = useState([]);
@@ -22,13 +26,15 @@ function GroupDetails() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
 
+  const [loading, setLoading] = useState(true);
+
   /* ===============================
      FETCH DATA
   =============================== */
 
   const fetchAll = async () => {
     try {
-  
+
       const [
         userRes,
         groupsRes,
@@ -42,22 +48,24 @@ function GroupDetails() {
         axios.get(`${API}/api/groups/${groupId}/balances`, { headers }),
         axios.get(`${API}/api/groups/${groupId}/expenses`, { headers })
       ]);
-  
+
       const currentGroup = groupsRes.data.find(
         g => g.id === Number(groupId)
       );
-  
+
       setGroup(currentGroup);
       setCurrentUser(userRes.data);
       setMembers(membersRes.data);
       setBalances(balanceRes.data);
       setExpenses(expenseRes.data);
-  
+
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load group", err);
+    } finally {
+      setLoading(false);
     }
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     fetchAll();
   }, []);
@@ -77,13 +85,19 @@ function GroupDetails() {
 
   const settle = async (balance) => {
 
-    await axios.post(
-      `${API}/api/groups/${groupId}/settle?fromUserId=${balance.fromUserId}&toUserId=${balance.toUserId}&amount=${balance.amount}`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    try {
 
-    fetchAll();
+      await axios.post(
+        `${API}/api/groups/${groupId}/settle?fromUserId=${balance.fromUserId}&toUserId=${balance.toUserId}&amount=${balance.amount}`,
+        {},
+        { headers }
+      );
+
+      fetchAll();
+
+    } catch (err) {
+      console.error("Settlement failed", err);
+    }
   };
 
   /* ===============================
@@ -98,7 +112,7 @@ function GroupDetails() {
 
       await axios.delete(
         `${API}/api/groups/${groupId}/expenses/${expenseId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers }
       );
 
       fetchAll();
@@ -107,6 +121,20 @@ function GroupDetails() {
       alert("You are not allowed to delete this expense.");
     }
   };
+
+  /* ===============================
+     LOADING
+  =============================== */
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="text-center py-20 text-gray-500">
+          Loading group details...
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -206,7 +234,6 @@ function GroupDetails() {
               </p>
 
             </div>
-
           );
         })}
 
@@ -282,7 +309,7 @@ function GroupDetails() {
           Activity Timeline
         </h3>
 
-        {expenses
+        {[...expenses]
           .sort(
             (a, b) =>
               new Date(b.createdAt) - new Date(a.createdAt)
