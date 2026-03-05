@@ -1,39 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import API from "../config";
 
 function AddMemberModal({ groupId, token, members, onClose }) {
+
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [results, setResults] = useState([]);
+
+  /* =========================
+     DEBOUNCE INPUT
+  ========================= */
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   /* =========================
      SEARCH USERS
   ========================= */
 
-  const searchUsers = async (value) => {
-    setQuery(value);
+  useEffect(() => {
 
-    if (value.length < 2) {
+    if (debouncedQuery.length < 2) {
       setResults([]);
       return;
     }
 
-    try {
-      const res = await axios.get(
-        `${API}/api/users/search?q=${value}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    const searchUsers = async () => {
+      try {
 
-      // remove users already in group
-      const filtered = res.data.filter(
-        (user) => !members.some((m) => m.email === user.email)
-      );
+        const res = await axios.get(
+          `${API}/api/users/search?q=${debouncedQuery}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
 
-      setResults(filtered);
-    } catch (err) {
-      console.error("Search failed");
-    }
-  };
+        const filtered = res.data.filter(
+          (user) =>
+            !members.some((m) => m.email === user.email)
+        );
+
+        setResults(filtered);
+
+      } catch (err) {
+        console.error("Search failed", err);
+      }
+    };
+
+    searchUsers();
+
+  }, [debouncedQuery, token, members]);
 
   /* =========================
      ADD MEMBER
@@ -41,6 +63,7 @@ function AddMemberModal({ groupId, token, members, onClose }) {
 
   const addMember = async (email) => {
     try {
+
       await axios.post(
         `${API}/api/groups/${groupId}/members`,
         { email },
@@ -48,12 +71,15 @@ function AddMemberModal({ groupId, token, members, onClose }) {
       );
 
       onClose();
+
     } catch (err) {
       alert("Failed to add member");
     }
   };
 
-  const alreadyMember = members.some((m) => m.email === query);
+  const alreadyMember = members.some(
+    (m) => m.email === query
+  );
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -69,7 +95,7 @@ function AddMemberModal({ groupId, token, members, onClose }) {
         <input
           placeholder="Search name or email"
           value={query}
-          onChange={(e) => searchUsers(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           className="w-full border p-2 rounded mb-3"
         />
 

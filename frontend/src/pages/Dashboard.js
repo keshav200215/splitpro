@@ -12,18 +12,19 @@ function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const userRes = await axios.get(
-        `${API}/api/users/me`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const groupRes = await axios.get(
-        `${API}/api/groups`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+  
+      const [userRes, groupRes] = await Promise.all([
+        axios.get(`${API}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/api/groups`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+  
       setUser(userRes.data);
       setGroups(groupRes.data);
+  
     } catch (error) {
       console.error("Failed to fetch dashboard data");
     }

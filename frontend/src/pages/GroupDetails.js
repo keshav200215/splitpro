@@ -28,44 +28,33 @@ function GroupDetails() {
 
   const fetchAll = async () => {
     try {
-
-      const userRes = await axios.get(
-        `${API}/api/users/me`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const groupsRes = await axios.get(
-        `${API}/api/groups`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const membersRes = await axios.get(
-        `${API}/api/groups/${groupId}/members`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const balanceRes = await axios.get(
-        `${API}/api/groups/${groupId}/balances`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const expenseRes = await axios.get(
-        `${API}/api/groups/${groupId}/expenses`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+  
+      const [
+        userRes,
+        groupsRes,
+        membersRes,
+        balanceRes,
+        expenseRes
+      ] = await Promise.all([
+        axios.get(`${API}/api/users/me`, { headers }),
+        axios.get(`${API}/api/groups`, { headers }),
+        axios.get(`${API}/api/groups/${groupId}/members`, { headers }),
+        axios.get(`${API}/api/groups/${groupId}/balances`, { headers }),
+        axios.get(`${API}/api/groups/${groupId}/expenses`, { headers })
+      ]);
+  
       const currentGroup = groupsRes.data.find(
-        (g) => g.id === Number(groupId)
+        g => g.id === Number(groupId)
       );
-
+  
       setGroup(currentGroup);
       setCurrentUser(userRes.data);
       setMembers(membersRes.data);
       setBalances(balanceRes.data);
       setExpenses(expenseRes.data);
-
+  
     } catch (err) {
-      console.error("Failed to load group data");
+      console.error(err);
     }
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
