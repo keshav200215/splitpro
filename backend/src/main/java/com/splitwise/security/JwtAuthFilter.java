@@ -23,54 +23,60 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain)
+        throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+    System.out.println("JWT FILTER: " + request.getMethod() + " " + request.getRequestURI());
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+    String authHeader = request.getHeader("Authorization");
 
-        String token = authHeader.substring(7);
-
-        try {
-
-            if (jwtUtil.validateToken(token)) {
-
-                String email = jwtUtil.extractEmail(token);
-
-                var userOptional = userRepository.findByEmail(email);
-
-                if (userOptional.isPresent()) {
-
-                    var user = userOptional.get();
-
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    user,
-                                    null,
-                                    Collections.emptyList()
-                            );
-
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource()
-                                    .buildDetails(request)
-                    );
-
-                    SecurityContextHolder
-                            .getContext()
-                            .setAuthentication(authentication);
-                }
-            }
-
-        } catch (Exception e) {
-            SecurityContextHolder.clearContext();
-        }
-
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        System.out.println("JWT FILTER: No token found");
         filterChain.doFilter(request, response);
+        return;
     }
+
+    String token = authHeader.substring(7);
+
+    try {
+
+        if (jwtUtil.validateToken(token)) {
+
+            String email = jwtUtil.extractEmail(token);
+
+            System.out.println("JWT FILTER: Token valid for " + email);
+
+            var userOptional = userRepository.findByEmail(email);
+
+            if (userOptional.isPresent()) {
+
+                var user = userOptional.get();
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                user,
+                                null,
+                                Collections.emptyList()
+                        );
+
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
+
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authentication);
+            }
+        }
+
+    } catch (Exception e) {
+        System.out.println("JWT FILTER ERROR: " + e.getMessage());
+        SecurityContextHolder.clearContext();
+    }
+
+    filterChain.doFilter(request, response);
+}
 }
