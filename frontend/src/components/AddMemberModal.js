@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API from "../config";
 
 function AddMemberModal({ groupId, token, members, onClose }) {
   const [query, setQuery] = useState("");
@@ -19,7 +20,7 @@ function AddMemberModal({ groupId, token, members, onClose }) {
 
     try {
       const res = await axios.get(
-        `http://localhost:8080/api/users/search?q=${value}`,
+        `${API}/api/users/search?q=${value}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -41,7 +42,7 @@ function AddMemberModal({ groupId, token, members, onClose }) {
   const addMember = async (email) => {
     try {
       await axios.post(
-        `http://localhost:8080/api/groups/${groupId}/members`,
+        `${API}/api/groups/${groupId}/members`,
         { email },
         { headers: { Authorization: `Bearer ${token}` } }
       );

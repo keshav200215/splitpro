@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
+import API from "../config";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
@@ -12,12 +13,12 @@ function Dashboard() {
   const fetchData = async () => {
     try {
       const userRes = await axios.get(
-        "http://localhost:8080/api/users/me",
+        "${API}/api/users/me",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const groupRes = await axios.get(
-        "http://localhost:8080/api/groups",
+        "${API}/api/groups",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
+import API from "../config";
 
 function Groups() {
   const [groups, setGroups] = useState([]);
@@ -12,7 +13,7 @@ function Groups() {
   const fetchGroups = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:8080/api/groups",
+        "${API}/api/groups",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setGroups(response.data);
@@ -26,7 +27,7 @@ function Groups() {
 
     try {
       await axios.post(
-        "http://localhost:8080/api/groups",
+        "${API}/api/groups",
         { name: newGroupName },
         { headers: { Authorization: `Bearer ${token}` } }
       );

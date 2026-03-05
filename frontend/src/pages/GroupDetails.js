@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import AddMemberModal from "../components/AddMemberModal";
 import EditExpenseModal from "../components/EditExpenseModal";
 import AddExpenseModal from "../components/AddExpenseModal";
+import API from "../config";
 
 function GroupDetails() {
 
@@ -29,27 +30,27 @@ function GroupDetails() {
     try {
 
       const userRes = await axios.get(
-        "http://localhost:8080/api/users/me",
+        "${API}/api/users/me",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const groupsRes = await axios.get(
-        "http://localhost:8080/api/groups",
+        "${API}/api/groups",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const membersRes = await axios.get(
-        `http://localhost:8080/api/groups/${groupId}/members`,
+        `${API}/api/groups/${groupId}/members`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const balanceRes = await axios.get(
-        `http://localhost:8080/api/groups/${groupId}/balances`,
+        `${API}/api/groups/${groupId}/balances`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const expenseRes = await axios.get(
-        `http://localhost:8080/api/groups/${groupId}/expenses`,
+        `${API}/api/groups/${groupId}/expenses`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -88,7 +89,7 @@ function GroupDetails() {
   const settle = async (balance) => {
 
     await axios.post(
-      `http://localhost:8080/api/groups/${groupId}/settle?fromUserId=${balance.fromUserId}&toUserId=${balance.toUserId}&amount=${balance.amount}`,
+      `${API}/api/groups/${groupId}/settle?fromUserId=${balance.fromUserId}&toUserId=${balance.toUserId}&amount=${balance.amount}`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -107,7 +108,7 @@ function GroupDetails() {
     try {
 
       await axios.delete(
-        `http://localhost:8080/api/groups/${groupId}/expenses/${expenseId}`,
+        `${API}/api/groups/${groupId}/expenses/${expenseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

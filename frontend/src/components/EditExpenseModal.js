@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API from "../config";
 
 function EditExpenseModal({ expense, groupId, token, members, onClose }) {
 
@@ -59,7 +60,7 @@ function EditExpenseModal({ expense, groupId, token, members, onClose }) {
     try {
 
       await axios.put(
-        `http://localhost:8080/api/groups/${groupId}/expenses/${expense.id}`,
+        `${API}/api/groups/${groupId}/expenses/${expense.id}`,
         {
           description,
           amount: Number(amount),
